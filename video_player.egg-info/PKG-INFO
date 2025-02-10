@@ -1,0 +1,10 @@
+Metadata-Version: 2.2
+Name: video_player
+Version: 0.1
+Requires-Dist: PyQt6
+Requires-Dist: python-vlc
+Requires-Dist: edge-tts
+Requires-Dist: pysrt
+Requires-Dist: pydub
+Requires-Dist: qasync
+Dynamic: requires-dist

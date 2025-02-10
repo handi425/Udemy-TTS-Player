@@ -1,0 +1,6 @@
+PyQt6
+python-vlc
+edge-tts
+pysrt
+pydub
+qasync
