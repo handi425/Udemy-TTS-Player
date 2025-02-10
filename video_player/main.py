@@ -11,20 +11,21 @@ import json
 
 class VideoPlayerApp:
     def __init__(self):
-        # Initialize models
+        # Inisialisasi models
         self.video_model = VideoModel()
         self.tts_model = TTSModel()
         self.player_model = PlayerModel()
 
-        # Initialize controller
+        # Inisialisasi controller
         self.controller = PlayerController(
             self.video_model,
             self.tts_model,
             self.player_model
         )
 
-        # Initialize view
+        # Inisialisasi view dan setup hubungan dengan controller
         self.view = PlayerView(self.controller)
+        self.controller.setup_view(self.view)
 
         # Load saved playlist
         self.load_playlist()

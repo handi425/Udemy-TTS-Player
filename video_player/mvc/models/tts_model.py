@@ -5,6 +5,11 @@ import os
 from pathlib import Path
 from dataclasses import dataclass
 from typing import List, Dict, Optional
+import pyttsx3
+import json
+from PyQt5.QtCore import QObject, pyqtSignal
+import speech_recognition as sr
+from googletrans import Translator
 
 @dataclass
 class TTSSegment:
@@ -19,14 +24,106 @@ VOICE_LIST = {
     "wanita": "id-ID-GadisNeural"
 }
 
-class TTSModel:
+class TTSModel(QObject):
+    conversion_progress = pyqtSignal(int)  # Signal untuk progress konversi
+    conversion_complete = pyqtSignal()      # Signal ketika konversi selesai
+    
     def __init__(self):
+        super().__init__()
+        self.engine = pyttsx3.init()
+        self.translator = Translator()
+        self.available_languages = self._get_available_languages()
+        self.current_source_lang = 'en'     # Bahasa default source
+        self.current_target_lang = 'id'     # Bahasa default target
         self._observers = []
         self._current_segments: List[TTSSegment] = []
         self._is_generating = False
         self._progress = 0
         self._voice_type = "pria"
         self._global_speed = 1.15
+
+    def _get_available_languages(self):
+        """Mendapatkan daftar bahasa yang tersedia"""
+        # Format: {'code': {'name': 'Bahasa Name', 'models': ['model1', 'model2']}}
+        return {
+            'en': {'name': 'English', 'models': ['en-us', 'en-uk']},
+            'id': {'name': 'Indonesian', 'models': ['id']},
+            'ja': {'name': 'Japanese', 'models': ['ja']},
+            'ko': {'name': 'Korean', 'models': ['ko']}
+        }
+    
+    def set_language(self, source_lang, target_lang):
+        """Mengatur bahasa source dan target"""
+        if source_lang in self.available_languages and target_lang in self.available_languages:
+            self.current_source_lang = source_lang
+            self.current_target_lang = target_lang
+            return True
+        return False
+    
+    def convert_srt_to_audio(self, srt_path, output_path):
+        """Mengkonversi file SRT ke audio dengan loading progress"""
+        try:
+            with open(srt_path, 'r', encoding='utf-8') as file:
+                subtitles = file.readlines()
+            
+            total_lines = len(subtitles)
+            current_line = 0
+            
+            # Proses tiap line subtitle
+            for line in subtitles:
+                if line.strip():  # Skip baris kosong
+                    # Translate text jika bahasa berbeda
+                    if self.current_source_lang != self.current_target_lang:
+                        translated = self.translator.translate(
+                            line.strip(),
+                            src=self.current_source_lang,
+                            dest=self.current_target_lang
+                        )
+                        text = translated.text
+                    else:
+                        text = line.strip()
+                    
+                    self.engine.save_to_file(text, output_path)
+                
+                current_line += 1
+                progress = int((current_line / total_lines) * 100)
+                self.conversion_progress.emit(progress)
+            
+            self.conversion_complete.emit()
+            return True
+            
+        except Exception as e:
+            print(f"Error dalam konversi SRT ke audio: {str(e)}")
+            return False
+    
+    def merge_video_and_audio(self, video_path, audio_path, output_path):
+        """Menggabungkan video dengan audio TTS"""
+        try:
+            import ffmpeg
+            
+            # Dapatkan durasi video
+            probe = ffmpeg.probe(video_path)
+            video_duration = float(probe['streams'][0]['duration'])
+            
+            # Sesuaikan audio dengan durasi video
+            stream = ffmpeg.input(audio_path)
+            stream = ffmpeg.filter(stream, 'atempo', video_duration/float(probe['streams'][1]['duration']))
+            
+            # Gabungkan video dengan audio yang sudah disesuaikan
+            stream = ffmpeg.input(video_path)
+            stream = ffmpeg.output(stream['v'], stream['a'], output_path)
+            ffmpeg.run(stream, overwrite_output=True)
+            
+            return True
+        except Exception as e:
+            print(f"Error dalam penggabungan video dan audio: {str(e)}")
+            return False
+    
+    def get_available_models(self, lang_code):
+        """Mendapatkan model yang tersedia untuk bahasa tertentu"""
+        if lang_code in self.available_languages:
+            return self.available_languages[lang_code]['models']
+        return []
 
     def add_observer(self, observer):
         self._observers.append(observer)

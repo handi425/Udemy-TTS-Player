@@ -1,13 +1,12 @@
 import os
 import asyncio
-from typing import Optional, Callable
+from typing import Optional, Callable, Any
 from PyQt6.QtWidgets import QFileDialog, QMessageBox
 from PyQt6.QtCore import QTimer
 from .modern_player_window import ModernPlayerWindow
-from ..controllers.player_controller import PlayerController
 
 class PlayerView:
-    def __init__(self, controller: PlayerController):
+    def __init__(self, controller: Any):
         self.controller = controller
         self.window = ModernPlayerWindow()
         self.setup_connections()
@@ -22,9 +21,65 @@ class PlayerView:
         self.update_timer.start()
 
         # TTS observer registration
-        self.controller.tts_model.add_observer(self)
-        self.controller.video_model.add_observer(self)
-        self.controller.player_model.add_observer(self)
+        if hasattr(self.controller, 'tts_model'):
+            self.controller.tts_model.add_observer(self)
+        if hasattr(self.controller, 'video_model'):
+            self.controller.video_model.add_observer(self)
+        if hasattr(self.controller, 'player_model'):
+            self.controller.player_model.add_observer(self)
+
+    # Properti untuk akses ke elemen UI dari ModernPlayerWindow
+    @property
+    def play_button(self):
+        return self.window.play_button
+
+    @property
+    def prev_button(self):
+        return self.window.prev_button
+
+    @property
+    def next_button(self):
+        return self.window.next_button
+
+    @property
+    def volume_slider(self):
+        return self.window.volume_slider
+
+    @property
+    def tts_toggle(self):
+        return self.window.tts_toggle
+        
+    @property
+    def source_language(self):
+        return self.window.source_language
+        
+    @property
+    def target_language(self):
+        return self.window.target_language
+
+    @property
+    def progress_bar(self):
+        return self.window.progress_bar
+        
+    @property
+    def playlist(self):
+        return self.window.playlist
+
+    @property
+    def add_button(self):
+        return self.window.add_button
+
+    @property
+    def remove_button(self):
+        return self.window.remove_button
+
+    @property
+    def voice_selector(self):
+        return self.window.voice_selector
+
+    @property
+    def video_frame(self):
+        return self.window.video_frame
 
     def setup_connections(self):
         """Setup UI event connections"""
@@ -102,8 +157,8 @@ class PlayerView:
             
             if srt_path:
                 voice_type = "pria" if self.window.voice_selector.currentText() == "Male" else "wanita"
+                # Hanya tambahkan video ke model, UI akan diupdate melalui observer
                 self.controller.add_video(video_path, srt_path, voice_type)
-                self.window.playlist.addItem(f"{os.path.basename(video_path)}")
 
     def remove_video(self):
         """Remove video from playlist"""
@@ -118,22 +173,25 @@ class PlayerView:
             await self.controller.play_video(self.window.get_video_frame().winId())
 
     def update_ui(self):
-        """Update UI state"""
+        """Update status UI berdasarkan state player"""
+        if not self.controller:
+            return
+            
         state = self.controller.player_model.state
-        
-        # Update time display
-        self.window.update_time_label(state.current_time, state.duration)
-        
-        # Update progress bar
-        if state.duration > 0:
-            progress = int((state.current_time / state.duration) * 1000)
-            self.window.progress_bar.setValue(progress)
-        
-        # Update play button
-        self.window.set_playing(state.is_playing)
-        
-        # Update TTS button
-        self.window.set_tts_enabled(state.is_using_tts)
+        if state:
+            # Update time display
+            self.update_time_label(state.current_time, state.duration)
+            
+            # Update progress bar
+            if state.duration > 0:
+                progress = int((state.current_time / state.duration) * 1000)
+                self.window.progress_bar.setValue(progress)
+            
+            # Update play button
+            self.set_playing(state.is_playing)
+            
+            # Update TTS button
+            self.set_tts_enabled(state.is_using_tts)
 
     def on_tts_update(self, event_type: str, data=None):
         """Handle TTS events"""
@@ -162,3 +220,31 @@ class PlayerView:
     def show(self):
         """Show the main window"""
         self.window.show()
+
+    def update_progress(self, value: int):
+        """Update progress bar untuk konversi TTS"""
+        self.window.update_progress(value)
+
+    def update_source_models(self, models):
+        """Update model yang tersedia untuk bahasa sumber"""
+        self.window.update_source_models(models)
+
+    def update_target_models(self, models):
+        """Update model yang tersedia untuk bahasa target"""
+        self.window.update_target_models(models)
+
+    def show_loading(self, show: bool):
+        """Menampilkan atau menyembunyikan loading indicator"""
+        self.window.show_loading(show)
+
+    def update_time_label(self, current: int, total: int):
+        """Update label waktu"""
+        self.window.update_time_label(current, total)
+
+    def set_playing(self, is_playing: bool):
+        """Update status tombol play"""
+        self.window.set_playing(is_playing)
+
+    def set_tts_enabled(self, enabled: bool):
+        """Update status tombol TTS"""
+        self.window.set_tts_enabled(enabled)

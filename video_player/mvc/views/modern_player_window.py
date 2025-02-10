@@ -157,6 +157,33 @@ class ModernPlayerWindow(QMainWindow):
         voice_layout.addWidget(self.voice_selector)
         right_layout.addLayout(voice_layout)
 
+        # Language selection
+        language_layout = QHBoxLayout()
+        
+        # Source Language
+        source_lang_layout = QVBoxLayout()
+        source_lang_label = QLabel("Bahasa Sumber:")
+        self.source_language = QComboBox()
+        self.source_model = QComboBox()
+        self._setup_language_combo(self.source_language)
+        source_lang_layout.addWidget(source_lang_label)
+        source_lang_layout.addWidget(self.source_language)
+        source_lang_layout.addWidget(self.source_model)
+        language_layout.addLayout(source_lang_layout)
+
+        # Target Language
+        target_lang_layout = QVBoxLayout()
+        target_lang_label = QLabel("Bahasa Target:")
+        self.target_language = QComboBox()
+        self.target_model = QComboBox()
+        self._setup_language_combo(self.target_language)
+        target_lang_layout.addWidget(target_lang_label)
+        target_lang_layout.addWidget(self.target_language)
+        target_lang_layout.addWidget(self.target_model)
+        language_layout.addLayout(target_lang_layout)
+
+        right_layout.addLayout(language_layout)
+
         # Playlist
         self.playlist = QListWidget()
         right_layout.addWidget(self.playlist)
@@ -194,3 +221,40 @@ class ModernPlayerWindow(QMainWindow):
     def get_video_frame(self) -> QFrame:
         """Get video frame widget"""
         return self.video_frame
+
+    def _setup_language_combo(self, combo_box):
+        """Setup combo box bahasa"""
+        languages = [
+            ("English", "en"),
+            ("Indonesian", "id"),
+            ("Japanese", "ja"),
+            ("Korean", "ko")
+        ]
+        for name, code in languages:
+            combo_box.addItem(name, code)
+
+    def show_loading(self, show: bool):
+        """Menampilkan atau menyembunyikan loading indicator"""
+        self.tts_progress.setVisible(show)
+        if show:
+            self.tts_progress.setValue(0)
+
+    def update_progress(self, value: int):
+        """Update progress bar"""
+        self.tts_progress.setValue(value)
+
+    def update_source_models(self, models):
+        """Update model yang tersedia untuk bahasa sumber"""
+        self.source_model.clear()
+        for model in models:
+            self.source_model.addItem(model)
+
+    def update_target_models(self, models):
+        """Update model yang tersedia untuk bahasa target"""
+        self.target_model.clear()
+        for model in models:
+            self.target_model.addItem(model)
+
+    def update_status(self, message: str):
+        """Update status label"""
+        self.status_label.setText(message)
