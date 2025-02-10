@@ -2,11 +2,11 @@ import sys
 import asyncio
 import qasync
 from PyQt6.QtWidgets import QApplication
-from video_player.mvc.models.video_model import VideoModel
-from video_player.mvc.models.tts_model import TTSModel
-from video_player.mvc.models.player_model import PlayerModel
-from video_player.mvc.controllers.player_controller import PlayerController
-from video_player.mvc.views.player_view import PlayerView
+from mvc.models.video_model import VideoModel
+from mvc.models.tts_model import TTSModel
+from mvc.models.player_model import PlayerModel
+from mvc.controllers.player_controller import PlayerController
+from mvc.views.player_view import PlayerView
 import json
 
 class VideoPlayerApp:
